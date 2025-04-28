@@ -238,7 +238,7 @@ function VerificationContent() {
                 </div>
             )}
 
-            {!connected && verificationStatus !== 'no_tg_user' && (
+            {!connected &&(
                 <p className="mt-4 text-gray-500 dark:text-gray-400">Please connect your Solana wallet to verify.</p>
             )}
         </div>
