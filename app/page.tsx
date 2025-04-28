@@ -229,7 +229,7 @@ function VerificationContent() {
                            <p className="font-semibold">Verification Failed</p>
                             {errorMessage && <p>{errorMessage}</p>}
                             {ownedCount < REQUIRED_NFT_COUNT && (
-                                <a href="YOUR_MAGIC_EDEN_LINK_HERE" target="_blank" rel="noopener noreferrer" className="text-blue-500 hover:underline mt-2 block">
+                                <a href="https://www.tensor.trade/trade/trenchdemons" target="_blank" rel="noopener noreferrer" className="text-blue-500 hover:underline mt-2 block">
                                    Buy more NFTs
                                 </a>
                             )}
