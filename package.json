@@ -9,15 +9,19 @@
     "lint": "next lint"
   },
   "dependencies": {
-    "@solana/wallet-adapter-base": "^0.9.26", 
+    "@solana/wallet-adapter-base": "^0.9.26",
     "@solana/wallet-adapter-react": "^0.15.38",
     "@solana/wallet-adapter-react-ui": "^0.9.38",
     "@solana/wallet-adapter-wallets": "^0.19.36",
-    "@solana/web3.js": "^1.98.2", 
+    "@solana/web3.js": "^1.98.2",
+    "@tsparticles/engine": "^3.8.1",
+    "@tsparticles/preset-links": "^3.2.0",
+    "@tsparticles/react": "^3.0.0",
     "clsx": "^2.1.1",
     "next": "15.2.3",
     "react": "^19.0.0",
     "react-dom": "^19.0.0",
+    "react-tsparticles": "^2.12.2",
     "tailwind-merge": "^3.2.0"
   },
   "devDependencies": {
