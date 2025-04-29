@@ -2,28 +2,17 @@
 "use client";
 
 import { Geist, Geist_Mono } from "next/font/google";
-import "./globals.css";
-import { ThemeProvider } from "@/components/ui/theme";
+import "./globals.css"; // Keep globals for Tailwind and overrides
 import React, { useMemo } from 'react';
 import { ConnectionProvider, WalletProvider } from '@solana/wallet-adapter-react';
 import { WalletAdapterNetwork } from '@solana/wallet-adapter-base';
 import { WalletModalProvider } from '@solana/wallet-adapter-react-ui';
 import { clusterApiUrl } from '@solana/web3.js';
-
-// --- Import specific MWA-compatible wallet adapters ---
-// Select the wallets you want to support. Phantom and Solflare are common.
 import {
     PhantomWalletAdapter,
     SolflareWalletAdapter,
-    // You can add others here if needed, e.g.:
-    // CoinbaseWalletAdapter,
-    // TrustWalletAdapter,
-    // LedgerWalletAdapter,
-    // TorusWalletAdapter,
 } from '@solana/wallet-adapter-wallets';
-// ------------------------------------------------------
-
-import '@solana/wallet-adapter-react-ui/styles.css';
+import '@solana/wallet-adapter-react-ui/styles.css'; // Keep library base styles
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -41,34 +30,24 @@ export default function RootLayout({
 }>) {
   const network = WalletAdapterNetwork.Mainnet;
   const endpoint = useMemo(() => clusterApiUrl(network), [network]);
-
-  // --- Instantiate the adapters you want to support ---
   const wallets = useMemo(
     () => [
-        // These adapters support MWA for connecting to their respective mobile apps
         new PhantomWalletAdapter(),
         new SolflareWalletAdapter(),
-        // Add instances of other imported adapters if desired
-        // e.g., new CoinbaseWalletAdapter(), new TrustWalletAdapter(), etc.
     ],
-    // You can keep network dependency if adapters might behave differently based on network,
-    // though often it's not strictly necessary for just instantiation.
     [network]
   );
-  // ------------------------------------------------------
 
   return (
-    <html lang="en">
+    // Apply dark theme directly
+    <html lang="en" className="dark">
       <body
-        className={`${geistSans.variable} ${geistMono.variable} antialiased`}
+        className={`${geistSans.variable} ${geistMono.variable} antialiased bg-black`}
       >
         <ConnectionProvider endpoint={endpoint}>
-          {/* Pass the array of instantiated adapters to the WalletProvider */}
           <WalletProvider wallets={wallets} autoConnect>
             <WalletModalProvider>
-              <ThemeProvider>
-                {children}
-              </ThemeProvider>
+              {children}
             </WalletModalProvider>
           </WalletProvider>
         </ConnectionProvider>

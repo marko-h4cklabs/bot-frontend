@@ -44,8 +44,8 @@ function VerificationContent() {
     const [ownedCount, setOwnedCount] = useState(0);
     const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
-    // --- Hooks (useEffect, useCallback for notifyBackend, useCallback for verifyNftHoldings) ---
-    useEffect(() => {
+    // --- Hooks ---
+     useEffect(() => {
         if (!tgUserId) {
             setVerificationStatus('no_tg_user');
             setErrorMessage("User identification missing. Please access this page via the link from the Telegram bot.");
@@ -138,8 +138,11 @@ function VerificationContent() {
         } catch (error: unknown) {
             console.error("Verification failed:", error);
              let errorMsg = "Verification check failed: An unknown error occurred";
-             if (error instanceof Error) { errorMsg = `Verification check failed: ${error.message}`; }
-             else if (typeof error === 'string') { errorMsg = `Verification check failed: ${error}`; }
+             if (error instanceof Error) {
+                 errorMsg = `Verification check failed: ${error.message}`;
+             } else if (typeof error === 'string') {
+                 errorMsg = `Verification check failed: ${error}`;
+             }
              setErrorMessage(errorMsg);
             setVerificationStatus('failure');
         } finally {
@@ -156,12 +159,12 @@ function VerificationContent() {
         }
       }, [connected, publicKey, verificationStatus, verifyNftHoldings, tgUserId]);
 
-    // --- JSX Rendering with NEW Black/White/Red STYLES ---
+    // --- JSX Rendering ---
     if (verificationStatus === 'no_tg_user') {
          return (
-             <div className="w-full max-w-xs p-8 bg-black border border-red-500/50 rounded-lg shadow-md text-center">
-                 <h1 className="text-lg font-semibold mb-5 text-red-500">Verification Error</h1>
-                 <div className="p-3 bg-[#111] border border-red-500/30 text-red-400 rounded text-sm">
+             <div className="w-full max-w-xs p-6 bg-black border border-red-900 rounded-md shadow-red-900/20 shadow-lg text-center">
+                 <h1 className="text-md font-medium mb-4 text-red-500">Verification Error</h1>
+                 <div className="p-3 bg-neutral-900 border border-red-800/50 text-red-500 rounded text-sm">
                     <p className="font-medium">Cannot Verify</p>
                     {errorMessage && <p className="mt-1">{errorMessage}</p>}
                  </div>
@@ -170,41 +173,44 @@ function VerificationContent() {
     }
 
     return (
-        <div className="w-full max-w-xs p-8 bg-black border border-gray-800 rounded-lg shadow-md text-center">
-            <h1 className="text-lg font-semibold mb-1 text-white">Solana NFT Verification</h1>
-             <p className="text-xs mb-6 text-gray-500">For Telegram User ID: {tgUserId || '...'}</p>
+        <div className="w-full max-w-xs p-6 bg-black border border-neutral-900 rounded-md shadow-neutral-900/20 shadow-lg text-center text-white">
+            <h1 className="text-md font-medium mb-1">Solana NFT Verification</h1>
+             <p className="text-[10px] mb-6 text-neutral-500">For Telegram User ID: {tgUserId || '...'}</p>
 
+            {/* Wallet Button uses CSS overrides from globals.css */}
             <div className="mb-6 flex justify-center">
-                {/* Style the Wallet Button - try red */}
-                <WalletMultiButton className="!bg-red-600 hover:!bg-red-700 !text-white !font-medium !rounded !shadow-sm" />
+                <WalletMultiButton />
             </div>
 
             {connected && publicKey && (
-                <div className="mt-6 space-y-3">
-                    <p className="text-[11px] font-mono text-gray-600 break-all" title={publicKey.toBase58()}>
-                      Wallet: {publicKey.toBase58()}
+                <div className="mt-4 space-y-4">
+                    <p className="text-[10px] font-mono text-neutral-600 break-all" title={publicKey.toBase58()}>
+                      {publicKey.toBase58()}
                     </p>
 
-                    {isLoading && <p className="text-gray-400 text-sm animate-pulse">Processing...</p>}
+                    {isLoading && <p className="text-neutral-400 text-sm animate-pulse">Processing...</p>}
 
+                    {/* Success/Notified/Backend Error Box */}
                     {!isLoading && (verificationStatus === 'success' || verificationStatus === 'backend_notified' || verificationStatus === 'backend_error') && (
-                        <div className="p-3 space-y-1 bg-[#0A0A0A] border border-green-500/30 text-green-400 rounded text-sm">
-                            <p className="font-semibold text-base">Verification Successful!</p>
+                        <div className="p-3 space-y-1 bg-neutral-900 border border-neutral-700 text-neutral-300 rounded text-sm">
+                            <p className="font-semibold text-white">Verification Successful!</p>
                             <p>You hold {ownedCount} required NFTs.</p>
-                            {errorMessage && <p className="mt-1 text-gray-300">{errorMessage}</p>}
-                            {verificationStatus === 'backend_error' && <p className="mt-1 text-yellow-500">There was an issue confirming with the bot.</p>}
+                            {/* Display confirmation/error from backend */}
+                            {errorMessage && <p className="mt-1 text-xs">{errorMessage}</p>}
+                             {verificationStatus === 'backend_error' && <p className="mt-1 text-yellow-500 text-xs font-semibold">Bot confirmation failed.</p>}
                         </div>
                     )}
 
+                    {/* Failure Box */}
                     {!isLoading && verificationStatus === 'failure' && (
-                        <div className="p-3 space-y-1 bg-[#111] border border-red-500/50 text-red-400 rounded text-sm">
+                        <div className="p-3 space-y-1 bg-neutral-900 border border-red-900 text-red-500 rounded text-sm">
                            <p className="font-semibold text-base">Verification Failed</p>
                             {errorMessage && <p>{errorMessage}</p>}
                             {ownedCount < REQUIRED_NFT_COUNT && (
                                 <a href={MARKETPLACE_LINK}
                                    target="_blank"
                                    rel="noopener noreferrer"
-                                   className="text-gray-400 hover:text-white hover:underline mt-2 block transition-colors">
+                                   className="text-red-600 hover:text-red-500 hover:underline mt-2 block transition-colors font-medium">
                                    Buy more NFTs
                                 </a>
                             )}
@@ -213,8 +219,9 @@ function VerificationContent() {
                 </div>
             )}
 
+            {/* Please Connect Message */}
             {!connected && (
-                <p className="mt-4 text-gray-500 text-sm">Please connect your Solana wallet to verify.</p>
+                <p className="mt-4 text-neutral-500 text-sm">Please connect your Solana wallet.</p>
             )}
         </div>
     );
@@ -222,8 +229,8 @@ function VerificationContent() {
 
 export default function VerificationPage() {
     return (
-        <Suspense fallback={<div className="flex min-h-screen items-center justify-center text-gray-600 bg-black">Loading...</div>}>
-            <main className="flex min-h-screen flex-col items-center justify-center p-4 sm:p-8 bg-black text-gray-300">
+        <Suspense fallback={<div className="flex min-h-screen items-center justify-center text-neutral-700 bg-black">Loading...</div>}>
+            <main className="flex min-h-screen flex-col items-center justify-center p-4 sm:p-8 bg-black text-neutral-300">
                 <VerificationContent />
             </main>
         </Suspense>
