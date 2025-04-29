@@ -28,18 +28,19 @@ export default function RootLayout({
 }: Readonly<{
   children: React.ReactNode;
 }>) {
-  const network = WalletAdapterNetwork.Mainnet;
-  const endpoint = useMemo(() => clusterApiUrl(network), [network]);
+  const network = WalletAdapterNetwork.Mainnet; // Network definition is fine here
+  const endpoint = useMemo(() => clusterApiUrl(network), [network]); // Endpoint depends on network
+
+  // Wallets usually don't depend on network for instantiation
   const wallets = useMemo(
     () => [
         new PhantomWalletAdapter(),
         new SolflareWalletAdapter(),
     ],
-    [network]
+    [] // Dependency array is now empty
   );
 
   return (
-    // Apply dark theme directly
     <html lang="en" className="dark">
       <body
         className={`${geistSans.variable} ${geistMono.variable} antialiased bg-black`}

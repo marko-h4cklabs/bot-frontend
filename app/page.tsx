@@ -7,8 +7,10 @@ import { WalletMultiButton } from '@solana/wallet-adapter-react-ui';
 import { useSearchParams } from 'next/navigation';
 
 // --- Particles Imports ---
+// Import Engine if you directly use Engine type, otherwise remove it
 import Particles, { initParticlesEngine } from "@tsparticles/react";
-import type { Container, Engine, ISourceOptions } from "@tsparticles/engine";
+// Remove Engine if not used: import type { Container, Engine, ISourceOptions } from "@tsparticles/engine";
+import type { Container, ISourceOptions } from "@tsparticles/engine"; // Engine removed
 import { loadLinksPreset } from "@tsparticles/preset-links";
 // ----------------------
 
@@ -40,12 +42,12 @@ interface HeliusResponse {
 export default function VerificationPage() {
     const [init, setInit] = useState(false);
 
-    // Initialize tsparticles engine only once
     useEffect(() => {
         initParticlesEngine(async (engine) => {
-            await loadLinksPreset(engine); // Load the preset
+            // Pass engine to loadLinksPreset
+            await loadLinksPreset(engine);
         }).then(() => {
-            setInit(true); // Mark engine as initialized
+            setInit(true);
         });
     }, []);
 
@@ -53,43 +55,42 @@ export default function VerificationPage() {
         console.log("Particles container loaded", container);
     };
 
-    // Particle options using the 'links' preset with custom colors
     const options: ISourceOptions = {
-        preset: "links", // Use the loaded preset
+        preset: "links",
         background: {
             color: {
-                value: "#000000", // Black background
+                value: "#000000",
             },
         },
         particles: {
             color: {
-                value: "#ffffff", // White particles
+                value: "#ffffff",
             },
             links: {
-                color: "#4b5563", // gray-600 for links
+                color: "#4b5563",
                 distance: 150,
                 enable: true,
-                opacity: 0.3, // Make links subtle
+                opacity: 0.3,
                 width: 1,
             },
             move: {
                 enable: true,
-                speed: 0.5, // Slow down movement
+                speed: 0.5,
             },
             number: {
                 density: {
                     enable: true,
                  },
-                value: 50, // Reduce particle count for minimalism
+                value: 50,
             },
             opacity: {
-                value: 0.5, // Make particles slightly transparent
+                value: 0.5,
             },
             shape: {
                 type: "circle",
             },
             size: {
-                value: { min: 1, max: 2 }, // Smaller particles
+                value: { min: 1, max: 2 },
             },
         },
         detectRetina: true,
@@ -97,22 +98,17 @@ export default function VerificationPage() {
 
 
     return (
-        // Wrap content in Suspense for useSearchParams hook
         <Suspense fallback={<div className="flex min-h-screen items-center justify-center text-neutral-700 bg-black">Loading...</div>}>
-            {/* Main container */}
             <main className="relative flex min-h-screen flex-col items-center justify-center p-4 sm:p-8 bg-black text-neutral-300 overflow-hidden">
-                {/* Particles Background - only render if engine is initialized */}
                  {init && (
                     <Particles
                         id="tsparticles"
                         particlesLoaded={particlesLoaded}
                         options={options}
-                        className="absolute inset-0 z-0" // Position behind content
+                        className="absolute inset-0 z-0"
                     />
                  )}
-
-                {/* Verification Content - Positioned above particles */}
-                 <div className="relative z-10"> {/* Ensure content is above particles */}
+                 <div className="relative z-10">
                     <VerificationContent />
                  </div>
             </main>
@@ -120,8 +116,7 @@ export default function VerificationPage() {
     );
 }
 
-
-// --- Verification Logic Component (Mostly Unchanged) ---
+// --- Verification Logic Component (No changes needed inside this component for the errors) ---
 function VerificationContent() {
     const searchParams = useSearchParams();
     const tgUserId = searchParams.get('tgUserId');
@@ -135,7 +130,6 @@ function VerificationContent() {
     const [ownedCount, setOwnedCount] = useState(0);
     const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
-    // --- Hooks (useEffect, notifyBackend, verifyNftHoldings) ---
      useEffect(() => {
         if (!tgUserId) {
             setVerificationStatus('no_tg_user');
@@ -229,8 +223,11 @@ function VerificationContent() {
         } catch (error: unknown) {
             console.error("Verification failed:", error);
              let errorMsg = "Verification check failed: An unknown error occurred";
-             if (error instanceof Error) { errorMsg = `Verification check failed: ${error.message}`; }
-             else if (typeof error === 'string') { errorMsg = `Verification check failed: ${error}`; }
+             if (error instanceof Error) {
+                 errorMsg = `Verification check failed: ${error.message}`;
+             } else if (typeof error === 'string') {
+                 errorMsg = `Verification check failed: ${error}`;
+             }
              setErrorMessage(errorMsg);
             setVerificationStatus('failure');
         } finally {
@@ -261,9 +258,8 @@ function VerificationContent() {
         );
     }
 
-    // Main card - use same styles as before
     return (
-         <div className="w-full max-w-xs p-6 bg-black border border-neutral-900 rounded-md shadow-neutral-900/20 shadow-lg text-center text-white">
+        <div className="w-full max-w-xs p-6 bg-black border border-neutral-900 rounded-md shadow-neutral-900/20 shadow-lg text-center text-white">
             <h1 className="text-md font-medium mb-1">Solana NFT Verification</h1>
              <p className="text-[10px] mb-6 text-neutral-500">For Telegram User ID: {tgUserId || '...'}</p>
 
