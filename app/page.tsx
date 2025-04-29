@@ -7,10 +7,8 @@ import { WalletMultiButton } from '@solana/wallet-adapter-react-ui';
 import { useSearchParams } from 'next/navigation';
 
 // --- Particles Imports ---
-// Import Engine if you directly use Engine type, otherwise remove it
 import Particles, { initParticlesEngine } from "@tsparticles/react";
-// Remove Engine if not used: import type { Container, Engine, ISourceOptions } from "@tsparticles/engine";
-import type { Container, ISourceOptions } from "@tsparticles/engine"; // Engine removed
+import type { Container, ISourceOptions } from "@tsparticles/engine";
 import { loadLinksPreset } from "@tsparticles/preset-links";
 // ----------------------
 
@@ -44,7 +42,6 @@ export default function VerificationPage() {
 
     useEffect(() => {
         initParticlesEngine(async (engine) => {
-            // Pass engine to loadLinksPreset
             await loadLinksPreset(engine);
         }).then(() => {
             setInit(true);
@@ -67,7 +64,7 @@ export default function VerificationPage() {
                 value: "#ffffff",
             },
             links: {
-                color: "#4b5563",
+                color: "#4b5563", // gray-600
                 distance: 150,
                 enable: true,
                 opacity: 0.3,
@@ -116,7 +113,7 @@ export default function VerificationPage() {
     );
 }
 
-// --- Verification Logic Component (No changes needed inside this component for the errors) ---
+// --- Verification Logic Component ---
 function VerificationContent() {
     const searchParams = useSearchParams();
     const tgUserId = searchParams.get('tgUserId');
@@ -130,6 +127,7 @@ function VerificationContent() {
     const [ownedCount, setOwnedCount] = useState(0);
     const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
+    // --- Hooks ---
      useEffect(() => {
         if (!tgUserId) {
             setVerificationStatus('no_tg_user');
@@ -248,6 +246,7 @@ function VerificationContent() {
     // --- JSX Rendering ---
     if (verificationStatus === 'no_tg_user') {
          return (
+             // Error card for missing user ID
              <div className="w-full max-w-xs p-6 bg-black border border-red-900 rounded-md shadow-red-900/20 shadow-lg text-center">
                  <h1 className="text-md font-medium mb-4 text-red-500">Verification Error</h1>
                  <div className="p-3 bg-neutral-900 border border-red-800/50 text-red-500 rounded text-sm">
@@ -259,10 +258,12 @@ function VerificationContent() {
     }
 
     return (
-        <div className="w-full max-w-xs p-6 bg-black border border-neutral-900 rounded-md shadow-neutral-900/20 shadow-lg text-center text-white">
+        // Main verification card with updated border
+        <div className="w-full max-w-xs p-6 bg-black border border-neutral-700 rounded-md shadow-neutral-900/20 shadow-lg text-center text-white">
             <h1 className="text-md font-medium mb-1">Solana NFT Verification</h1>
              <p className="text-[10px] mb-6 text-neutral-500">For Telegram User ID: {tgUserId || '...'}</p>
 
+            {/* Wallet Button uses CSS overrides from globals.css */}
             <div className="mb-6 flex justify-center">
                 <WalletMultiButton />
             </div>
@@ -272,21 +273,30 @@ function VerificationContent() {
                     <p className="text-[10px] font-mono text-neutral-600 break-all" title={publicKey.toBase58()}>
                       {publicKey.toBase58()}
                     </p>
+
                     {isLoading && <p className="text-neutral-400 text-sm animate-pulse">Processing...</p>}
+
+                    {/* Success/Notified/Backend Error Box */}
                     {!isLoading && (verificationStatus === 'success' || verificationStatus === 'backend_notified' || verificationStatus === 'backend_error') && (
                         <div className="p-3 space-y-1 bg-neutral-900 border border-neutral-700 text-neutral-300 rounded text-sm">
                             <p className="font-semibold text-white">Verification Successful!</p>
                             <p>You hold {ownedCount} required NFTs.</p>
+                            {/* Display confirmation/error from backend */}
                             {errorMessage && <p className="mt-1 text-xs">{errorMessage}</p>}
                              {verificationStatus === 'backend_error' && <p className="mt-1 text-yellow-500 text-xs font-semibold">Bot confirmation failed.</p>}
                         </div>
                     )}
+
+                    {/* Failure Box */}
                     {!isLoading && verificationStatus === 'failure' && (
                         <div className="p-3 space-y-1 bg-neutral-900 border border-red-900 text-red-500 rounded text-sm">
                            <p className="font-semibold text-base">Verification Failed</p>
                             {errorMessage && <p>{errorMessage}</p>}
                             {ownedCount < REQUIRED_NFT_COUNT && (
-                                <a href={MARKETPLACE_LINK} target="_blank" rel="noopener noreferrer" className="text-red-600 hover:text-red-500 hover:underline mt-2 block transition-colors font-medium">
+                                <a href={MARKETPLACE_LINK}
+                                   target="_blank"
+                                   rel="noopener noreferrer"
+                                   className="text-red-600 hover:text-red-500 hover:underline mt-2 block transition-colors font-medium">
                                    Buy more NFTs
                                 </a>
                             )}
@@ -294,6 +304,8 @@ function VerificationContent() {
                     )}
                 </div>
             )}
+
+            {/* Please Connect Message */}
             {!connected && (
                 <p className="mt-4 text-neutral-500 text-sm">Please connect your Solana wallet.</p>
             )}
