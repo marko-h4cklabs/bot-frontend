@@ -6,12 +6,15 @@ import { useConnection, useWallet } from '@solana/wallet-adapter-react';
 import { WalletMultiButton } from '@solana/wallet-adapter-react-ui';
 import { useSearchParams } from 'next/navigation';
 
+// --- Config ---
 const HELIUS_API_KEY = process.env.NEXT_PUBLIC_HELIUS_API_KEY;
 const COLLECTION_AUTHORITY = process.env.NEXT_PUBLIC_NFT_COLLECTION_AUTHORITY;
 const REQUIRED_NFT_COUNT = 3;
 const BACKEND_API_URL = process.env.NEXT_PUBLIC_BACKEND_API_URL;
 const FRONTEND_API_SECRET = process.env.NEXT_PUBLIC_FRONTEND_API_SECRET;
+const MARKETPLACE_LINK = "https://www.tensor.trade/trade/trenchdemons";
 
+// --- Interfaces ---
 interface HeliusAsset {
   id: string;
   grouping?: { group_key: string; group_value: string }[];
@@ -27,11 +30,12 @@ interface HeliusResponse {
   };
 }
 
+// --- Logic Component ---
 function VerificationContent() {
     const searchParams = useSearchParams();
     const tgUserId = searchParams.get('tgUserId');
 
-    useConnection(); // Call hook, but don't assign 'connection' if unused
+    useConnection();
     const { publicKey, connected } = useWallet();
     const [isLoading, setIsLoading] = useState(false);
     const [verificationStatus, setVerificationStatus] = useState<
@@ -40,6 +44,7 @@ function VerificationContent() {
     const [ownedCount, setOwnedCount] = useState(0);
     const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
+    // --- Hooks (useEffect, useCallback for notifyBackend, useCallback for verifyNftHoldings) ---
     useEffect(() => {
         if (!tgUserId) {
             setVerificationStatus('no_tg_user');
@@ -66,24 +71,20 @@ function VerificationContent() {
             if (FRONTEND_API_SECRET) {
                  headers['X-Verification-Secret'] = FRONTEND_API_SECRET;
             }
-
             const backendResponse = await fetch(`${BACKEND_API_URL}/api/v1/mark-verified`, {
                 method: 'POST',
                 headers: headers,
                 body: JSON.stringify({ userId: parseInt(tgUserId, 10) })
             });
-
             if (!backendResponse.ok) {
                  const errorData = await backendResponse.json().catch(() => ({}));
                  throw new Error(`Backend Error: ${backendResponse.statusText} ${errorData.error || ''}`);
             }
-
             const result = await backendResponse.json();
             console.log('Backend notified successfully:', result);
             setVerificationStatus('backend_notified');
             setErrorMessage("Verification complete! Check your Telegram DMs for the group link.");
-
-        } catch (error: unknown) { // Use unknown for error type
+        } catch (error: unknown) {
             console.error("Error notifying backend:", error);
              let errorMsg = "Verification succeeded, but couldn't confirm with the bot. Please try again later or contact support.";
              if (error instanceof Error) {
@@ -96,21 +97,17 @@ function VerificationContent() {
         }
     }, [tgUserId]);
 
-
     const verifyNftHoldings = useCallback(async () => {
         if (!publicKey || !HELIUS_API_KEY || !COLLECTION_AUTHORITY || !tgUserId) {
             setErrorMessage("Configuration error, wallet not connected, or Telegram User ID missing.");
             setVerificationStatus('failure');
             return;
         }
-
         setIsLoading(true);
         setVerificationStatus('checking');
         setErrorMessage(null);
         setOwnedCount(0);
-
         const url = `https://mainnet.helius-rpc.com/?api-key=${HELIUS_API_KEY}`;
-
         try {
             const response = await fetch(url, {
                 method: 'POST',
@@ -119,35 +116,18 @@ function VerificationContent() {
                     jsonrpc: '2.0',
                     id: `verify-${tgUserId}-${Date.now()}`,
                     method: 'getAssetsByOwner',
-                    params: {
-                        ownerAddress: publicKey.toBase58(),
-                        page: 1,
-                        limit: 1000,
-                    },
+                    params: { ownerAddress: publicKey.toBase58(), page: 1, limit: 1000, },
                 }),
             });
-
-            if (!response.ok) {
-                throw new Error(`Helius API Error: ${response.statusText} (${response.status})`);
-            }
-
+            if (!response.ok) { throw new Error(`Helius API Error: ${response.statusText} (${response.status})`); }
             const data: HeliusResponse = await response.json();
-
-            if (data.error) {
-                throw new Error(`Helius RPC Error: ${data.error?.message || 'Unknown RPC error'}`);
-            }
-
-            if (!data.result || !data.result.items) {
-                 throw new Error("Invalid response structure from Helius API");
-            }
-
+            if (data.error) { throw new Error(`Helius RPC Error: ${data.error?.message || 'Unknown RPC error'}`); }
+            if (!data.result || !data.result.items) { throw new Error("Invalid response structure from Helius API"); }
             const ownedNftsFromCollection = data.result.items.filter(asset =>
                 asset.grouping?.some(g => g.group_key === 'collection' && g.group_value === COLLECTION_AUTHORITY)
             );
-
             const count = ownedNftsFromCollection.length;
             setOwnedCount(count);
-
             if (count >= REQUIRED_NFT_COUNT) {
                 setVerificationStatus('success');
                 notifyBackend();
@@ -155,29 +135,20 @@ function VerificationContent() {
                 setVerificationStatus('failure');
                 setErrorMessage(`You need at least ${REQUIRED_NFT_COUNT} NFTs from the specified collection. You currently hold ${count}.`);
             }
-
-        } catch (error: unknown) { // Use unknown for error type
+        } catch (error: unknown) {
             console.error("Verification failed:", error);
              let errorMsg = "Verification check failed: An unknown error occurred";
-             if (error instanceof Error) {
-                errorMsg = `Verification check failed: ${error.message}`;
-             } else if (typeof error === 'string') {
-                  errorMsg = `Verification check failed: ${error}`;
-             }
+             if (error instanceof Error) { errorMsg = `Verification check failed: ${error.message}`; }
+             else if (typeof error === 'string') { errorMsg = `Verification check failed: ${error}`; }
              setErrorMessage(errorMsg);
             setVerificationStatus('failure');
         } finally {
-            if (verificationStatus !== 'success') {
-                 setIsLoading(false);
-            }
+            if (verificationStatus !== 'success') { setIsLoading(false); }
         }
     }, [publicKey, tgUserId, verificationStatus, notifyBackend]);
 
-
      useEffect(() => {
-        if (connected && publicKey && verificationStatus === 'idle' && tgUserId) {
-          verifyNftHoldings();
-        }
+        if (connected && publicKey && verificationStatus === 'idle' && tgUserId) { verifyNftHoldings(); }
         if (!connected || !tgUserId) {
             setVerificationStatus(tgUserId ? 'idle' : 'no_tg_user');
             setErrorMessage(tgUserId ? null : "User identification missing. Please access this page via the link from the Telegram bot.");
@@ -185,51 +156,55 @@ function VerificationContent() {
         }
       }, [connected, publicKey, verificationStatus, verifyNftHoldings, tgUserId]);
 
-
+    // --- JSX Rendering with NEW Black/White/Red STYLES ---
     if (verificationStatus === 'no_tg_user') {
          return (
-             <div className="w-full max-w-md p-6 bg-white dark:bg-gray-800 rounded-lg shadow-md text-center">
-                 <h1 className="text-2xl font-bold mb-6">Verification Error</h1>
-                 <div className="p-4 bg-red-100 dark:bg-red-900 text-red-700 dark:text-red-300 rounded">
-                    <p className="font-semibold">Cannot Verify</p>
-                    {errorMessage && <p>{errorMessage}</p>}
+             <div className="w-full max-w-xs p-8 bg-black border border-red-500/50 rounded-lg shadow-md text-center">
+                 <h1 className="text-lg font-semibold mb-5 text-red-500">Verification Error</h1>
+                 <div className="p-3 bg-[#111] border border-red-500/30 text-red-400 rounded text-sm">
+                    <p className="font-medium">Cannot Verify</p>
+                    {errorMessage && <p className="mt-1">{errorMessage}</p>}
                  </div>
              </div>
         );
     }
 
     return (
-        <div className="w-full max-w-md p-6 bg-white dark:bg-gray-800 rounded-lg shadow-md text-center">
-            <h1 className="text-2xl font-bold mb-6">Solana NFT Verification</h1>
-             <p className="text-xs mb-4 text-gray-500 dark:text-gray-400">For Telegram User ID: {tgUserId || '...'}</p>
+        <div className="w-full max-w-xs p-8 bg-black border border-gray-800 rounded-lg shadow-md text-center">
+            <h1 className="text-lg font-semibold mb-1 text-white">Solana NFT Verification</h1>
+             <p className="text-xs mb-6 text-gray-500">For Telegram User ID: {tgUserId || '...'}</p>
 
-            <div className="mb-6">
-                <WalletMultiButton />
+            <div className="mb-6 flex justify-center">
+                {/* Style the Wallet Button - try red */}
+                <WalletMultiButton className="!bg-red-600 hover:!bg-red-700 !text-white !font-medium !rounded !shadow-sm" />
             </div>
 
             {connected && publicKey && (
-                <div className="mt-4 space-y-4">
-                    <p className="text-sm text-gray-600 dark:text-gray-400 break-all">
+                <div className="mt-6 space-y-3">
+                    <p className="text-[11px] font-mono text-gray-600 break-all" title={publicKey.toBase58()}>
                       Wallet: {publicKey.toBase58()}
                     </p>
 
-                    {isLoading && <p>Processing...</p>}
+                    {isLoading && <p className="text-gray-400 text-sm animate-pulse">Processing...</p>}
 
                     {!isLoading && (verificationStatus === 'success' || verificationStatus === 'backend_notified' || verificationStatus === 'backend_error') && (
-                        <div className="p-4 bg-green-100 dark:bg-green-900 text-green-700 dark:text-green-300 rounded">
-                            <p className="font-semibold">Verification Successful!</p>
+                        <div className="p-3 space-y-1 bg-[#0A0A0A] border border-green-500/30 text-green-400 rounded text-sm">
+                            <p className="font-semibold text-base">Verification Successful!</p>
                             <p>You hold {ownedCount} required NFTs.</p>
-                            {errorMessage && <p className="mt-2 text-sm">{errorMessage}</p>}
-                            {verificationStatus === 'backend_error' && <p className="mt-2 text-yellow-600 dark:text-yellow-400 text-sm">There was an issue confirming with the bot.</p>}
+                            {errorMessage && <p className="mt-1 text-gray-300">{errorMessage}</p>}
+                            {verificationStatus === 'backend_error' && <p className="mt-1 text-yellow-500">There was an issue confirming with the bot.</p>}
                         </div>
                     )}
 
                     {!isLoading && verificationStatus === 'failure' && (
-                        <div className="p-4 bg-red-100 dark:bg-red-900 text-red-700 dark:text-red-300 rounded">
-                           <p className="font-semibold">Verification Failed</p>
+                        <div className="p-3 space-y-1 bg-[#111] border border-red-500/50 text-red-400 rounded text-sm">
+                           <p className="font-semibold text-base">Verification Failed</p>
                             {errorMessage && <p>{errorMessage}</p>}
                             {ownedCount < REQUIRED_NFT_COUNT && (
-                                <a href="https://www.tensor.trade/trade/trenchdemons" target="_blank" rel="noopener noreferrer" className="text-blue-500 hover:underline mt-2 block">
+                                <a href={MARKETPLACE_LINK}
+                                   target="_blank"
+                                   rel="noopener noreferrer"
+                                   className="text-gray-400 hover:text-white hover:underline mt-2 block transition-colors">
                                    Buy more NFTs
                                 </a>
                             )}
@@ -238,8 +213,8 @@ function VerificationContent() {
                 </div>
             )}
 
-            {!connected &&(
-                <p className="mt-4 text-gray-500 dark:text-gray-400">Please connect your Solana wallet to verify.</p>
+            {!connected && (
+                <p className="mt-4 text-gray-500 text-sm">Please connect your Solana wallet to verify.</p>
             )}
         </div>
     );
@@ -247,8 +222,8 @@ function VerificationContent() {
 
 export default function VerificationPage() {
     return (
-        <Suspense fallback={<div className="flex min-h-screen items-center justify-center">Loading...</div>}>
-            <main className="flex min-h-screen flex-col items-center justify-center p-8 bg-gray-100 dark:bg-gray-900 text-gray-900 dark:text-gray-100">
+        <Suspense fallback={<div className="flex min-h-screen items-center justify-center text-gray-600 bg-black">Loading...</div>}>
+            <main className="flex min-h-screen flex-col items-center justify-center p-4 sm:p-8 bg-black text-gray-300">
                 <VerificationContent />
             </main>
         </Suspense>
